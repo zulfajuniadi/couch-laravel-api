@@ -26,7 +26,7 @@ return array(
 	|
 	*/
 
-	'default' => 'mysql',
+	'default' => 'couchUsers',
 
 	/*
 	|--------------------------------------------------------------------------
@@ -45,6 +45,18 @@ return array(
 	*/
 
 	'connections' => array(
+
+		'couchUsers' => array(
+		    'driver'   => 'couchdb',
+		    'type'     => 'socket',
+		    'host'     => 'localhost',
+		    'ip'       => null,
+		    'port'     => 5984,
+		    'dbname'   => '_users',
+		    'user'     => 'zulfajuniadi',
+		    'password' => 'ik4k388x',
+		    'logging'  => false,
+		),
 
 		'sqlite' => array(
 			'driver'   => 'sqlite',
