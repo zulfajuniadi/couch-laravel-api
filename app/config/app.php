@@ -78,7 +78,7 @@ return array(
 	|
 	*/
 
-	'key' => 'N6j1qTYSgGvexOmVmJDyu7bcRTWPPvLQ',
+	'key' => '9vXbwcjW5qQeFxC5o9k62OEfwmttmact',
 
 	'cipher' => MCRYPT_RIJNDAEL_128,
 
@@ -121,6 +121,7 @@ return array(
 		'Illuminate\Validation\ValidationServiceProvider',
 		'Illuminate\View\ViewServiceProvider',
 		'Illuminate\Workbench\WorkbenchServiceProvider',
+		'Rbewley4\Laravel\Couchdb\CouchdbServiceProvider',
 
 	),
 
