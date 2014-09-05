@@ -3,48 +3,96 @@
 Route::get('/', function()
 {
     return Response::json([
-        'status' => 'OK',
-        'couch'  => 'OK'
+        'status' => 'OK'
     ]);
 });
 
 Route::post('/{appName}', function($appName)
 {
     $rules = [
-        'username' => 'required|alphanum|min:5',
-        'password' => 'required|min:8'
+        'username' => 'required|alpha_num|between:5,20',
+        'password' => 'required|between:8,30',
+        'appName'  => 'required|alpha_num|between:4,30'
     ];
     $couchUsersConnection = DB::connection('couchUsers');
     $couchUsers = $couchUsersConnection->getCouchDB();
 
-    $validator = Validator::make($data = Input::all(), $rules);
+    $data = Input::all();
+    $data['appName'] = $appName;
+    $validator = Validator::make($data, $rules);
     if($validator->fails())
-        return Response::json($validator->messages(), 400);
+        return Response::json([
+            'error_code'    => 100,
+            'error_message' => $validator->failed()
+        ], 400);
 
-    $dbName = $appName . '.' . $data['username'];
+    $dbName = $appName . '__' . $data['username'];
 
     /**
      * Check User Exists
      */
-    if($couchUsers->find('org.couchdb.user:' . $data['username']))
-        return Response::json(['User already exists'], 400);
-    
-    /**
-     * Create Database
-     */
-    $couchUsers->createDatabase($dbName);
+    $userId = 'org.couchdb.user:' . $data['username'];
+    $response = $couchUsers->findDocument($userId);
+    if($response->status !== 404)
+        return Response::json([
+            'error_code'    => 101,
+            'error_message' => 'User already exists'
+        ], 400);
     
     /**
      * Create User
      */
-    $couchUsers->post([
-        'name' => $data['username'],
-        'type' => 'user',
-        'roles' => [],
-        'password' => $data['password']
-    ]);
+    try {
+        $couchUser = $couchUsers->postDocument([
+            '_id'      => $userId,
+            'name'     => $data['username'],
+            'type'     => 'user',
+            'roles'    => [$appName],
+            'password' => $data['password']
+        ]);
+    } catch (Exception $e) {
+        return Response::json([
+            'error_code'    => 102,
+            'error_message' => 'Unable to create user'
+        ], 400);
+    }
+    
+    /**
+     * Create Database
+     */
+    try {
+        $couchUsers->createDatabase($dbName);
+    } catch (Exception $e) {
+        return Response::json([
+            'error_code'    => 103,
+            'error_message' => 'Unable to create database'
+        ], 400);
+    }
     
     /**
      * Add User To DB
      */
+    try {
+        $adminUsername = Config::get('database.connections.couchUsers.user');
+        $path = '/' . $dbName . '/_security';
+        $data = [
+            'admins'    => [
+                'names' => [$adminUsername],
+                'roles' => []
+            ],
+            'members'   => [
+                'names' => [$data['username']],
+                'roles' => []
+            ]
+        ];
+        $http = $couchUsers->getHttpClient();
+        $http->request('PUT', $path, json_encode($data));
+    } catch (Exception $e) {
+        return Response::json([
+            'error_code'    => 104,
+            'error_message' => 'Unable to set database permissions'
+        ], 400);
+    }
+    
+    return Response::json($couchUser, 201);
 });
