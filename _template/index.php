@@ -6,6 +6,8 @@
  * @author   Taylor Otwell <taylorotwell@gmail.com>
  */
 
+define('PUBLIC_PATH', 'register');
+
 /*
 |--------------------------------------------------------------------------
 | Register The Auto Loader
