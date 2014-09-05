@@ -7,18 +7,17 @@ Route::get('/', function()
     ]);
 });
 
-Route::post('/{appName}', function($appName)
+Route::post('/', function()
 {
     $rules = [
+        'appname'  => 'required|alpha_num|between:4,30',
         'username' => 'required|alpha_num|between:5,20',
-        'password' => 'required|between:8,30',
-        'appName'  => 'required|alpha_num|between:4,30'
+        'password' => 'required|between:8,30'
     ];
     $couchUsersConnection = DB::connection('couchUsers');
     $couchUsers = $couchUsersConnection->getCouchDB();
 
-    $data = Input::all();
-    $data['appName'] = $appName;
+    $data      = Input::all();
     $validator = Validator::make($data, $rules);
     if($validator->fails())
         return Response::json([
@@ -26,12 +25,14 @@ Route::post('/{appName}', function($appName)
             'error_message' => $validator->failed()
         ], 400);
 
-    $dbName = $appName . '__' . $data['username'];
+    $appname  = $data['appname'];
+    $username = $data['username'];
+    $dbName   = $appname . '__' . $username;
 
     /**
      * Check User Exists
      */
-    $userId = 'org.couchdb.user:' . $data['username'];
+    $userId   = 'org.couchdb.user:' . $username;
     $response = $couchUsers->findDocument($userId);
     if($response->status !== 404)
         return Response::json([
@@ -45,9 +46,9 @@ Route::post('/{appName}', function($appName)
     try {
         $couchUser = $couchUsers->postDocument([
             '_id'      => $userId,
-            'name'     => $data['username'],
+            'name'     => $username,
             'type'     => 'user',
-            'roles'    => [$appName],
+            'roles'    => [$appname],
             'password' => $data['password']
         ]);
     } catch (Exception $e) {
@@ -78,10 +79,10 @@ Route::post('/{appName}', function($appName)
         $data = [
             'admins'    => [
                 'names' => [$adminUsername],
-                'roles' => []
+                'roles' => ['admins']
             ],
             'members'   => [
-                'names' => [$data['username']],
+                'names' => [$username],
                 'roles' => []
             ]
         ];
